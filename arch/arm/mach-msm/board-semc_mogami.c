@@ -74,6 +74,9 @@
 #ifdef CONFIG_TOUCHSCREEN_CYTTSP_CORE
 #include <linux/cyttsp.h>
 #endif
+#ifdef CONFIG_TOUCHSCREEN_CY8CTMA300_SPI
+#include <linux/spi/cy8ctma300_touch.h>
+#endif
 #ifdef CONFIG_INPUT_BMA150
 #include <linux/bma150.h>
 #endif
@@ -103,6 +106,10 @@
 #endif
 #if defined(CONFIG_FB_MSM_MDDI_AUO_HVGA_LCD)
 #include <linux/mddi_auo_s6d05a1_hvga.h>
+#endif
+
+#ifdef CONFIG_TOUCHSCREEN_CLEARPAD
+#include <linux/clearpad.h>
 #endif
 
 #if defined(CONFIG_FB_MSM_MDDI_SONY_HVGA_LCD) || \
@@ -157,7 +164,6 @@
 #include <mach/qdsp5v2/audio_dev_ctl.h>
 #include <mach/sdio_al.h>
 #include "smd_private.h"
-#include <linux/bma150.h>
 
 #include <linux/leds-as3676_semc.h>
 #include "board-semc_mogami-leds.h"
@@ -874,12 +880,63 @@ static struct msm_ssbi_platform_data msm7x30_ssbi_pm8058_pdata = {
 };
 #endif
 
+static const struct panel_id *novatek_panels[] = {
+#ifdef CONFIG_MDDI_NOVATEK_PANEL_SHARP_LS040T8LX01
+	&novatek_panel_id_sharp_ls040t8lx01_rev_c,
+	&novatek_panel_id_sharp_ls040t8lx01_rev_d,
+#endif
+#ifdef CONFIG_MDDI_NOVATEK_PANEL_SHARP_LS042T3LX
+	&novatek_panel_id_sharp_ls042t3lx_type1,
+	&novatek_panel_id_sharp_ls042t3lx,
+#endif
+#ifdef CONFIG_MDDI_NOVATEK_PANEL_SONY_ACX424AKM
+	&novatek_panel_id_sony_acx424akm_type1,
+	&novatek_panel_id_sony_acx424akm,
+#endif
+#ifdef CONFIG_MDDI_NOVATEK_PANEL_SONY_ACX427AK
+	&novatek_panel_id_sony_acx427ak,
+#endif
+#ifdef CONFIG_MDDI_NOVATEK_PANEL_SONY_ACX424AK
+	&novatek_panel_id_sony_acx424ak,
+#endif
+#ifdef CONFIG_MDDI_NOVATEK_PANEL_HITACHI_DX09D09VM
+	&novatek_panel_id_hitachi_dx09d09vm_type1,
+	&novatek_panel_id_hitachi_dx09d09vm,
+#endif
+#ifdef CONFIG_MDDI_NOVATEK_PANEL_SHARP_LS033T3LX01
+	&novatek_panel_id_sharp_ls033t3lx01,
+#endif
+#ifdef CONFIG_MDDI_NOVATEK_PANEL_TMD_LT033MDV1000
+	&novatek_panel_id_tmd_lt033mdv1000,
+#endif
+	NULL,
+};
+
+struct novatek_i2c_pdata novatek_i2c_pdata = {
+	.panels = novatek_panels,
+};
+
+#ifdef CONFIG_INPUT_BMA150_NG
+static int bma150_gpio_setup(bool request)
+{
+	if (request)
+		return gpio_request(BMA150_GPIO, "bma150_irq");
+	else
+		gpio_free(BMA150_GPIO);
+	return 0;
+}
+
+struct bma150_platform_data bma150_ng_platform_data = {
+	.gpio_setup = bma150_gpio_setup,
+};
+#endif
+
 static struct i2c_board_info msm_camera_boardinfo[] __initdata = {
-	/*{
+	{
 		I2C_BOARD_INFO(MDDI_NOVATEK_I2C_NAME, 0x98 >> 1),
 		.type = MDDI_NOVATEK_I2C_NAME,
 		.platform_data = &novatek_i2c_pdata,
-	},*/
+	},
 #ifdef CONFIG_INPUT_BMA150
 	{
 		I2C_BOARD_INFO("bma150", 0x70 >> 1),
@@ -2923,42 +2980,6 @@ static struct platform_device novatek_device = {
 	}
 };
 
-static const struct panel_id *novatek_panels[] = {
-#ifdef CONFIG_MDDI_NOVATEK_PANEL_SHARP_LS040T8LX01
-	&novatek_panel_id_sharp_ls040t8lx01_rev_c,
-	&novatek_panel_id_sharp_ls040t8lx01_rev_d,
-#endif
-#ifdef CONFIG_MDDI_NOVATEK_PANEL_SHARP_LS042T3LX
-	&novatek_panel_id_sharp_ls042t3lx_type1,
-	&novatek_panel_id_sharp_ls042t3lx,
-#endif
-#ifdef CONFIG_MDDI_NOVATEK_PANEL_SONY_ACX424AKM
-	&novatek_panel_id_sony_acx424akm_type1,
-	&novatek_panel_id_sony_acx424akm,
-#endif
-#ifdef CONFIG_MDDI_NOVATEK_PANEL_SONY_ACX427AK
-	&novatek_panel_id_sony_acx427ak,
-#endif
-#ifdef CONFIG_MDDI_NOVATEK_PANEL_SONY_ACX424AK
-	&novatek_panel_id_sony_acx424ak,
-#endif
-#ifdef CONFIG_MDDI_NOVATEK_PANEL_HITACHI_DX09D09VM
-	&novatek_panel_id_hitachi_dx09d09vm_type1,
-	&novatek_panel_id_hitachi_dx09d09vm,
-#endif
-#ifdef CONFIG_MDDI_NOVATEK_PANEL_SHARP_LS033T3LX01
-	&novatek_panel_id_sharp_ls033t3lx01,
-#endif
-#ifdef CONFIG_MDDI_NOVATEK_PANEL_TMD_LT033MDV1000
-	&novatek_panel_id_tmd_lt033mdv1000,
-#endif
-	NULL,
-};
-
-struct novatek_i2c_pdata novatek_i2c_pdata = {
-	.panels = novatek_panels,
-};
-
 #ifdef CONFIG_FB_MSM_HDMI_SII9024A_PANEL
 static struct msm_gpio sii9024_gpio_config_data_enable[] = {
 	{ GPIO_CFG(90, 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),
@@ -3536,14 +3557,12 @@ int cyttsp_xres(void)
 {
 	int polarity;
 	int rc;
-printk(KERN_ERR "cyttsp_xres 1\n");
 	rc = gpio_direction_input(CYPRESS_TOUCH_GPIO_RESET);
 	if (rc) {
 		printk(KERN_ERR "%s: failed to set direction input, %d\n",
 		       __func__, rc);
 		return -EIO;
 	}
-printk(KERN_ERR "cyttsp_xres 2\n");
 	polarity = gpio_get_value(CYPRESS_TOUCH_GPIO_RESET) & 0x01;
 	printk(KERN_INFO "%s: %d\n", __func__, polarity);
 	rc = gpio_direction_output(CYPRESS_TOUCH_GPIO_RESET, polarity ^ 1);
@@ -3554,7 +3573,6 @@ printk(KERN_ERR "cyttsp_xres 2\n");
 	}
 	msleep(1);
 	gpio_set_value(CYPRESS_TOUCH_GPIO_RESET, polarity);
-printk(KERN_ERR "cyttsp_xres 3\n");
 	return 0;
 }
 
@@ -4061,21 +4079,6 @@ static struct bma150_platform_data bma150_platform_data = {
 };
 #endif
 
-#ifdef CONFIG_INPUT_BMA150_NG
-static int bma150_gpio_setup(bool request)
-{
-	if (request)
-		return gpio_request(BMA150_GPIO, "bma150_irq");
-	else
-		gpio_free(BMA150_GPIO);
-	return 0;
-}
-
-struct bma150_platform_data bma150_ng_platform_data = {
-	.gpio_setup = bma150_gpio_setup,
-};
-#endif
-
 #ifdef CONFIG_INPUT_BMA250
 static int bma250_gpio_setup(struct device *dev)
 {
@@ -4176,6 +4179,12 @@ static struct akm8975_platform_data akm8975_platform_data = {
 };
 
 static struct i2c_board_info msm_i2c_board_info[] = {
+#ifdef CONFIG_TOUCHSCREEN_CLEARPAD_I2C
+	{
+		I2C_BOARD_INFO(CLEARPADI2C_NAME, 0x58 >> 1),
+		.platform_data = &clearpad_platform_data,
+	},
+#endif
 	{
 		I2C_BOARD_INFO("m33c01", OPTNAV_I2C_SLAVE_ADDR),
 		.irq		= MSM_GPIO_TO_INT(OPTNAV_IRQ),
@@ -6725,7 +6734,6 @@ out3:
  */
 static void __init mogami_temp_fixups(void)
 {
-printk(KERN_NOTICE "mogami_temp_fixups 1\n");
 	vreg_helper_off("gp3");	/* L0 */
 	vreg_helper_off("gp5");	/* L23 */
 	gpio_set_value(46, 1);	/* SPI_CS0_N */
@@ -7127,23 +7135,19 @@ static void __init msm7x30_init(void)
 	soc_version = socinfo_get_version();
 	wlan_init_seq();
 	msm_clock_init(&msm7x30_clock_init_data);
-printk(KERN_NOTICE "msm7x30_init 1\n");
 #ifdef CONFIG_SERIAL_MSM_CONSOLE
 	msm7x30_init_uart3();
 #endif
-printk(KERN_NOTICE "msm7x30_init 2\n");
 	msm_spm_init(&msm_spm_data, 1);
 	acpuclk_init(&acpuclk_7x30_soc_data);
 	if (machine_is_msm7x30_surf() || machine_is_msm7x30_fluid())
 		msm7x30_cfg_smsc911x();
-printk(KERN_NOTICE "msm7x30_init 3\n");
 #ifdef CONFIG_USB_MSM_OTG_72K
 	if (SOCINFO_VERSION_MAJOR(soc_version) >= 2 &&
 			SOCINFO_VERSION_MINOR(soc_version) >= 1) {
 		pr_debug("%s: SOC Version:2.(1 or more)\n", __func__);
 		msm_otg_pdata.ldo_set_voltage = 0;
 	}
-printk(KERN_NOTICE "msm7x30_init 4\n");
 	hsusb_chg_set_supplicants(hsusb_chg_supplied_to,
 				  ARRAY_SIZE(hsusb_chg_supplied_to));
 	msm_device_otg.dev.platform_data = &msm_otg_pdata;
@@ -7166,16 +7170,12 @@ printk(KERN_NOTICE "msm7x30_init 4\n");
 		msm_adc_pdata.dev_names = msm_adc_surf_device_names;
 		msm_adc_pdata.num_adc = ARRAY_SIZE(msm_adc_surf_device_names);
 	}
-printk(KERN_NOTICE "msm7x30_init 5\n");
 	pmic8058_leds_init();
-printk(KERN_NOTICE "msm7x30_init 6\n");
 	buses_init();
-printk(KERN_NOTICE "msm7x30_init 7\n");
 #ifdef CONFIG_MSM_SSBI
 	msm_device_ssbi_pmic1.dev.platform_data =
 				&msm7x30_ssbi_pm8058_pdata;
 #endif
-printk(KERN_NOTICE "msm7x30_init 8\n");
 	platform_add_devices(msm_footswitch_devices,
 			     msm_num_footswitch_devices);
 	platform_add_devices(devices, ARRAY_SIZE(devices));
@@ -7183,12 +7183,9 @@ printk(KERN_NOTICE "msm7x30_init 8\n");
 #ifdef CONFIG_USB_EHCI_MSM_72K
 	msm_add_host(0, &msm_usb_host_pdata);
 #endif
-printk(KERN_NOTICE "msm7x30_init 9\n");
 	msm7x30_init_mmc();
 	msm_qsd_spi_init();
-printk(KERN_NOTICE "msm7x30_init 10\n");
 	msm7x30_init_nand();
-printk(KERN_NOTICE "msm7x30_init 11\n");
 #ifdef CONFIG_BT
 	bluetooth_power(0);
 #endif
@@ -7204,7 +7201,6 @@ printk(KERN_NOTICE "msm7x30_init 11\n");
 	msm_device_i2c_2_init();
 	qup_device_i2c_init();
 	msm7x30_init_marimba();
-printk(KERN_NOTICE "msm7x30_init 13\n");
 #ifdef CONFIG_MSM7KV2_AUDIO
 	snddev_poweramp_gpio_init();
 	snddev_hsed_voltage_init();
@@ -7406,13 +7402,10 @@ static void __init msm7x30_allocate_memory_regions(void)
 static void __init msm7x30_map_io(void)
 {
 	msm_shared_ram_phys = 0x00100000;
-printk(KERN_NOTICE "msm7x30_map_io 1 \n");
 	msm_map_msm7x30_io();
-printk(KERN_NOTICE "msm7x30_map_io 1 \n");
 	if (socinfo_init() < 0)
 		printk(KERN_ERR "%s: socinfo_init() failed!\n",
 		       __func__);
-printk(KERN_NOTICE "msm7x30_map_io 3 \n");
 }
 
 static void __init msm7x30_init_early(void)
