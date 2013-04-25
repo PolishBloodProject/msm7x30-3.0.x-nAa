@@ -1,4 +1,4 @@
-/* /kernel/arch/arm/mach-msm/leds-mango.c
+/* /kernel/arch/arm/mach-msm/leds-iyokan.c
  *
  * Copyright (C) [2010] Sony Ericsson Mobile Communications AB.
  *
@@ -22,15 +22,14 @@ static struct as3676_platform_led as3676_leds_mapping[] = {
 	},
 	{
 		.name = "button-backlight",
-		.sinks = BIT(AS3676_SINK_RGB2) | BIT(AS3676_SINK_RGB3),
+		.sinks = BIT(AS3676_SINK_RGB1),
 		.max_current = 25000,
 	},
 	{
 		.name = "keyboard-backlight",
-		.sinks = BIT(AS3676_SINK_30) | BIT(AS3676_SINK_31) |
-				BIT(AS3676_SINK_32) | BIT(AS3676_SINK_33),
-		.max_current = 25000,
-	},	
+		.sinks = BIT(AS3676_SINK_32) | BIT(AS3676_SINK_33),
+		.max_current = 38000,
+	},
 	{
 		.name = "red",
 		.sinks = BIT(AS3676_SINK_41),
