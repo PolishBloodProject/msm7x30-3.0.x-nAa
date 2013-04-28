@@ -34,6 +34,8 @@
 #include <linux/power_supply.h>
 #include <linux/i2c/isa1200.h>
 #include <linux/i2c/tsc2007.h>
+#include <linux/skbuff.h>
+#include <linux/ti_wilink_st.h>
 #include <linux/input/kp_flip_switch.h>
 #include <linux/leds-pmic8058.h>
 #include <linux/input/cy8c_ts.h>
@@ -273,6 +275,9 @@
 #define VREG_L10	"gp4"	/* BMA150, AK8975B */
 #define VREG_L15	"gp6"	/* LCD */
 #define VREG_L20	"gp13"	/* Touch */
+
+#define WILINK_UART_DEV_NAME    "/dev/ttyHS0"
+#define MOGAMI_BT_GPIO 103
 
 
 /* Platform specific HW-ID GPIO mask */
@@ -5286,6 +5291,7 @@ static struct msm_panel_common_pdata mdp_pdata = {
 };
 
 #ifdef CONFIG_BT
+
 static uint32_t bt_config_on_gpios[] = {
 	GPIO_CFG(134, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_4MA),
 	GPIO_CFG(135, 1, GPIO_CFG_INPUT,  GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
@@ -5316,10 +5322,46 @@ static int bluetooth_power(int on)
 	return 0;
 }
 
-static struct platform_device mogami_device_rfkill = {
-	.name = "mogami-rfkill",
-	.dev.platform_data = &bluetooth_power,
+static int plat_chip_enable(void)
+{
+bluetooth_power(1);
+return 1;
+}
+
+static int plat_chip_disable(void)
+{
+bluetooth_power(0);
+return 1;
+}
+
+/* wl128x BT, FM, GPS connectivity chip */
+static struct ti_st_plat_data wilink_pdata = {
+        .dev_name = WILINK_UART_DEV_NAME,
+        .flow_cntrl = 1,
+        .baud_rate = 3000000,
+	.chip_enable = plat_chip_enable,
+	.chip_disable = plat_chip_disable,
 };
+
+static struct platform_device btwilink_device = {
+        .name = "btwilink",
+        .id = -1,
+};
+
+/* wl127x BT, FM, GPS connectivity chip */
+static struct platform_device wl1271_device = {
+        .name   = "kim",
+        .id     = -1,
+        .dev.platform_data = &wilink_pdata,
+};
+
+static noinline void __init mogami_bt_wl1271(void)
+{
+        platform_device_register(&wl1271_device);
+        platform_device_register(&btwilink_device);
+
+        return;
+}
 #endif
 
 static struct regulator *atv_s4, *atv_ldo9;
@@ -5722,7 +5764,6 @@ static struct platform_device *devices[] __initdata = {
 	&slider_device_mogami,
 #endif
 #ifdef CONFIG_BT
-	&mogami_device_rfkill,
 #endif
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 	&ram_console_device,
@@ -7233,6 +7274,7 @@ static void __init msm7x30_init(void)
 	msm_qsd_spi_init();
 	msm7x30_init_nand();
 #ifdef CONFIG_BT
+	mogami_bt_wl1271();
 	bluetooth_power(0);
 #endif
 	atv_dac_power_init();
