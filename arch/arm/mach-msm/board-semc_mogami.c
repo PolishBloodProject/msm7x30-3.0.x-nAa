@@ -15,6 +15,7 @@
 #include <linux/kernel.h>
 #include <linux/irq.h>
 #include <linux/gpio.h>
+#include <linux/gpio_event.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
 #include <linux/bootmem.h>
@@ -194,7 +195,11 @@
 #include "board-msm7x30-regulator.h"
 #include "pm.h"
 
-#define MSM_PMEM_SF_SIZE	0x1600000
+#ifdef CONFIG_FB_MSM_HDPI
+#define MSM_PMEM_SF_SIZE  0x1C00000
+#else
+#define MSM_PMEM_SF_SIZE  0x1600000
+#endif
 #ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
 #define MSM_FB_PRIM_BUF_SIZE   (864 * 480 * 4 * 3) /* 4bpp * 3 Pages */
 #else
@@ -1540,7 +1545,7 @@ static struct platform_device msm_gemini_device = {
 };
 #endif
 
-#ifdef CONFIG_MSM_VPE
+#if defined (CONFIG_MSM_VPE) || defined(CONFIG_MSM_VPE_STANDALONE)
 static struct resource msm_vpe_resources[] = {
 	{
 		.start	= 0xAD200000,
@@ -1553,9 +1558,18 @@ static struct resource msm_vpe_resources[] = {
 		.flags	= IORESOURCE_IRQ,
 	},
 };
-
+#endif
+#ifdef CONFIG_MSM_VPE
 static struct platform_device msm_vpe_device = {
        .name = "msm_vpe",
+       .id   = 0,
+       .num_resources = ARRAY_SIZE(msm_vpe_resources),
+       .resource = msm_vpe_resources,
+};
+#endif
+#ifdef CONFIG_MSM_VPE_STANDALONE
+static struct platform_device msm_vpe_standalone_device = {
+       .name = "msm_vpe_standalone",
        .id   = 0,
        .num_resources = ARRAY_SIZE(msm_vpe_resources),
        .resource = msm_vpe_resources,
@@ -3213,7 +3227,11 @@ static struct sii9024_platform_data sii9024_platform_data = {
 static void semc_mogami_lcd_regulators_on(void)
 {
 	vreg_helper_on("gp7",1800);  /* L8 */
+#ifdef CONFIG_MACH_SEMC_ANZU
+	vreg_helper_on("gp6",2850);  /* L15 */
+#else
 	vreg_helper_on("gp6",2300);  /* L15 */
+#endif
 }
 
 /* Generic Power On function for SEMC mogami displays */
@@ -5486,6 +5504,24 @@ static void __init msm_fb_add_devices(void)
 #endif /* CONFIG_FB_MSM_HDMI_SII9024A_PANEL */
 }
 
+#ifdef CONFIG_ANDROID_RAM_CONSOLE
+#define MSM_RAM_CONSOLE_SIZE 256*1024
+static struct resource ram_console_resources[] = {
+	{
+		.start  = 0,
+		.end    = 0,
+		.flags  = IORESOURCE_MEM,
+	},
+};
+
+static struct platform_device ram_console_device = {
+	.name           = "ram_console",
+	.id             = -1,
+	.num_resources  = ARRAY_SIZE(ram_console_resources),
+	.resource       = ram_console_resources,
+};
+#endif
+
 static struct msm_psy_batt_pdata msm_psy_batt_data = {
 	.voltage_min_design 	= 2800,
 	.voltage_max_design	= 4300,
@@ -5661,6 +5697,9 @@ static struct platform_device *devices[] __initdata = {
 #ifdef CONFIG_MSM_VPE
 	&msm_vpe_device,
 #endif
+#ifdef CONFIG_MSM_VPE_STANDALONE
+	&msm_vpe_standalone_device,
+#endif
 	&bdata_driver,
 #ifdef CONFIG_SIMPLE_REMOTE_PLATFORM
 	&simple_remote_pf_device,
@@ -5684,6 +5723,9 @@ static struct platform_device *devices[] __initdata = {
 #endif
 #ifdef CONFIG_BT
 	&mogami_device_rfkill,
+#endif
+#ifdef CONFIG_ANDROID_RAM_CONSOLE
+	&ram_console_device,
 #endif
 #if defined(CONFIG_TSIF) || defined(CONFIG_TSIF_MODULE)
 	&msm_device_tsif,
@@ -6745,7 +6787,11 @@ static void __init shared_vreg_on(void)
 {
 	vreg_helper_on(VREG_L20, 2800);
 	vreg_helper_on(VREG_L10, 2600);
+#ifdef CONFIG_MACH_SEMC_ANZU
+	vreg_helper_on(VREG_L15, 2900);
+#else
 	vreg_helper_on(VREG_L15, 2300);
+#endif
 	vreg_helper_on(VREG_L8, 1800);
 }
 
@@ -7397,6 +7443,18 @@ static void __init msm7x30_allocate_memory_regions(void)
 	msm_fb_resources[0].end = msm_fb_resources[0].start + size - 1;
 	pr_info("allocating %lu bytes at %p (%lx physical) for fb\n",
 		size, addr, __pa(addr));
+
+#ifdef CONFIG_ANDROID_RAM_CONSOLE
+	/* RAM Console can't use alloc_bootmem(), since that zeroes the
+	 * region */
+	size = MSM_RAM_CONSOLE_SIZE;
+	ram_console_resources[0].start = msm_fb_resources[0].end+1;
+	ram_console_resources[0].end = ram_console_resources[0].start + size - 1;
+	pr_info("allocating %lu bytes at (%lx physical) for ram console\n",
+		size, (unsigned long)ram_console_resources[0].start);
+	/* We still have to reserve it, though */
+	reserve_bootmem(ram_console_resources[0].start,size,0);
+#endif
 }
 
 static void __init msm7x30_map_io(void)

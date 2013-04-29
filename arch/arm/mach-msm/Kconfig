@@ -486,7 +486,7 @@ config MACH_SEMC_SMULTRON
 config MACH_SEMC_MANGO
 	depends on ARCH_MSM7X30
 	depends on !MSM_STACKED_MEMORY
-	select TI1271
+	select SUPPORT_ALIEN_USB_CHARGER
 	default n
 	bool "SonyEricsson Mango"
 	help
@@ -495,6 +495,7 @@ config MACH_SEMC_MANGO
 config MACH_SEMC_COCONUT
 	depends on ARCH_MSM7X30
 	depends on !MSM_STACKED_MEMORY
+	select SUPPORT_ALIEN_USB_CHARGER
 	default n
 	bool "SonyEricsson Coconut"
 	help
@@ -503,15 +504,17 @@ config MACH_SEMC_COCONUT
 config MACH_SEMC_HAIDA
 	depends on ARCH_MSM7X30
 	depends on !MSM_STACKED_MEMORY
-	select TI1271
+	select FB_MSM_HDPI
 	select SUPPORT_ALIEN_USB_CHARGER
 	default y
 	bool "SonyEricsson Haida"
 	help
 	  Support for the SonyEricsson Haida devices.
+
 config MACH_SEMC_URUSHI
 	depends on ARCH_MSM7X30
 	depends on !MSM_STACKED_MEMORY
+	select FB_MSM_HDPI
 	select SUPPORT_ALIEN_USB_CHARGER
 	default y
 	bool "SonyEricsson Urushi"
@@ -521,11 +524,41 @@ config MACH_SEMC_URUSHI
 config MACH_SEMC_ANZU
 	depends on ARCH_MSM7X30
 	depends on !MSM_STACKED_MEMORY
+	select FB_MSM_HDPI
 	select SUPPORT_ALIEN_USB_CHARGER
 	default y
 	bool "SonyEricsson Anzu"
 	help
 	  Support for the SonyEricsson Anzu devices.
+
+config MACH_SEMC_IYOKAN
+	depends on ARCH_MSM7X30
+	select FB_MSM_HDPI
+	depends on !MSM_STACKED_MEMORY
+	select SUPPORT_ALIEN_USB_CHARGER
+	default y
+	bool "SonyEricsson Iyokan"
+	help
+	  Support for the SonyEricsson Iyokan devices.
+
+config MACH_SEMC_HALLON
+	depends on ARCH_MSM7X30
+	depends on !MSM_STACKED_MEMORY
+	select FB_MSM_HDPI
+	select SUPPORT_ALIEN_USB_CHARGER
+	default y
+	bool "SonyEricsson Hallon"
+	help
+	  Support for the SonyEricsson Hallon devices.
+
+config MACH_SEMC_SATSUMA
+	depends on ARCH_MSM7X30
+	depends on !MSM_STACKED_MEMORY
+	select SUPPORT_ALIEN_USB_CHARGER
+	default y
+	bool "SonyEricsson Satsuma"
+	help
+	  Support for the SonyEricsson Satsuma devices.
 
 config MACH_SAPPHIRE
 	depends on ARCH_MSM7X01A
@@ -1950,6 +1983,15 @@ config SIMPLE_REMOTE_PLATFORM
 	help
 	  Provides support for detecting 3.5mm audio jack, such as wired
 	  headset. This is the platform specific layer.
+
+config SIMPLE_REMOTE_INVERT_PLUG_DETECTION_STATE
+	bool "Invert state of plug detection"
+	depends on SIMPLE_REMOTE_PLATFORM
+	help
+	  This option enables to invert headphone plug detection state,
+	  currently the plug detection state was low state when headphone
+	  was inserted, but it is high state on some products, so that
+	  we need invert this state on these products.
 
 config MSM_DLOAD_MODE
 	bool "Enable download mode on crashes"
