@@ -7293,6 +7293,7 @@ static void __init msm7x30_init(void)
 	msm_qsd_spi_init();
 	msm7x30_init_nand();
 #ifdef CONFIG_BT
+	bluetooth_power(0);
 	mogami_bt_wl1271();
 #endif
 	atv_dac_power_init();
