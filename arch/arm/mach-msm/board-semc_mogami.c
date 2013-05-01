@@ -5326,16 +5326,22 @@ static int bluetooth_power(int on)
 	return 0;
 }
 
+static struct wake_lock st_wk_lock;
+
 static int plat_chip_enable(void)
 {
-bluetooth_power(1);
-return 1;
+	bluetooth_power(1);
+	pr_info("plat_chip_enable\n");
+	wake_lock(&st_wk_lock);
+	return 1;
 }
 
 static int plat_chip_disable(void)
 {
-bluetooth_power(0);
-return 1;
+	bluetooth_power(0);
+	pr_info("plat_chip_disable\n");
+	wake_unlock(&st_wk_lock);
+	return 1;
 }
 
 /* wl128x BT, FM, GPS connectivity chip */
@@ -5361,6 +5367,7 @@ static struct platform_device wl1271_device = {
 
 static noinline void __init mogami_bt_wl1271(void)
 {
+	wake_lock_init(&st_wk_lock, WAKE_LOCK_SUSPEND, "st_wake_lock");
         platform_device_register(&wl1271_device);
         platform_device_register(&btwilink_device);
 
@@ -7287,7 +7294,6 @@ static void __init msm7x30_init(void)
 	msm7x30_init_nand();
 #ifdef CONFIG_BT
 	mogami_bt_wl1271();
-	bluetooth_power(0);
 #endif
 	atv_dac_power_init();
 #ifdef CONFIG_BOSCH_BMA150
