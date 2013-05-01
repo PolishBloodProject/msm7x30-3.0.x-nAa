@@ -5367,12 +5367,10 @@ static struct platform_device wl1271_device = {
 
 static noinline void __init mogami_bt_wl1271(void)
 {
-
 	wake_lock_init(&st_wk_lock, WAKE_LOCK_SUSPEND, "st_wake_lock");
-	if (false) {
-		platform_device_register(&wl1271_device);
-		platform_device_register(&btwilink_device);
-	}
+        platform_device_register(&wl1271_device);
+        platform_device_register(&btwilink_device);
+
         return;
 }
 #endif
