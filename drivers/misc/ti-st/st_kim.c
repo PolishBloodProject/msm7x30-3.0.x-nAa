@@ -466,7 +466,7 @@ long st_kim_start(void *kim_data)
 	do {
 		/* platform specific enabling code here */
 		if (pdata->chip_enable)
-			pdata->chip_enable(kim_gdata);
+			pdata->chip_enable();
 
 		/* re-initialize the completion */
 		INIT_COMPLETION(kim_gdata->ldisc_installed);
@@ -544,7 +544,7 @@ long st_kim_stop(void *kim_data)
 
 	/* platform specific disable */
 	if (pdata->chip_disable)
-		pdata->chip_disable(kim_gdata);
+		pdata->chip_disable();
 	return err;
 }
 

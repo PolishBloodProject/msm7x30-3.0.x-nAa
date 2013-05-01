@@ -55,7 +55,7 @@ static void ll_device_want_to_sleep(struct st_data_s *st_data)
 	kim_data = st_data->kim_data;
 	pdata = kim_data->kim_pdev->dev.platform_data;
 	if (pdata->chip_asleep)
-		pdata->chip_asleep(NULL);
+		pdata->chip_asleep();
 }
 
 static void ll_device_want_to_wakeup(struct st_data_s *st_data)
@@ -88,7 +88,7 @@ static void ll_device_want_to_wakeup(struct st_data_s *st_data)
 	kim_data = st_data->kim_data;
 	pdata = kim_data->kim_pdev->dev.platform_data;
 	if (pdata->chip_awake)
-		pdata->chip_awake(NULL);
+		pdata->chip_awake();
 }
 
 /**********************************************************************/
