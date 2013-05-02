@@ -5326,6 +5326,19 @@ static int bluetooth_power(int on)
 	return 0;
 }
 
+static unsigned long retry_suspend;
+
+int plat_kim_suspend(struct platform_device *pdev, pm_message_t state)
+{
+pr_info("plat_kim_suspend\n");
+        return 0;
+}
+int plat_kim_resume(struct platform_device *pdev)
+{
+retry_suspend = 0;
+        return 0;
+}
+
 static struct wake_lock st_wk_lock;
 
 static int plat_chip_enable(void)
@@ -5349,6 +5362,8 @@ static struct ti_st_plat_data wilink_pdata = {
         .dev_name = WILINK_UART_DEV_NAME,
         .flow_cntrl = 1,
         .baud_rate = 3000000,
+	.suspend = plat_kim_suspend,
+	.resume = plat_kim_resume,
 	.chip_enable = plat_chip_enable,
 	.chip_disable = plat_chip_disable,
 };
